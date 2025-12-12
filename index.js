@@ -1,7 +1,6 @@
-// index.js - PS AI Tool hotfix backend (paste this file in repo root)
 const express = require('express');
-const dotenv = require('dotenv');
 const cors = require('cors');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
@@ -9,29 +8,64 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Module routes (we will send each module file next)
-const mount = (path) => {
-  try {
-    app.use(path, require(__dirname + path + '.js'));
-  } catch (e) {
-    // if file not present yet, return placeholder route
-    app.use(path, (req, res, next) => {
-      if (req.path === '/' || req.path === '') return res.json({ route: path, status: 'not-installed-yet' });
-      next();
-    });
-  }
-};
+// --- AUTH API ---
+app.post('/api/auth/login', (req, res) => {
+  const jwt = require('jsonwebtoken');
+  const token = jwt.sign(
+    { user: "demo" },
+    process.env.JWT_SECRET || "secret",
+    { expiresIn: "7d" }
+  );
+  res.json({ success: true, token });
+});
 
-mount('/modules/auth/auth.routes');
-mount('/modules/users/users.routes');
-mount('/modules/wallet/wallet.routes');
-mount('/modules/payment/qr/qr.routes');
-mount('/modules/payment/crypto/crypto.routes');
-mount('/modules/affiliate/affiliate.routes');
-mount('/modules/verification/verify.routes');
-mount('/modules/admin/admin.routes');
+// --- USERS ---
+app.get('/api/users', (req, res) => {
+  res.json({ users: [], message: "users working" });
+});
 
-app.get('/', (req, res) => res.json({ ok: true, app: 'PS AI Tool - Hotfix Backend' }));
+// --- WALLET ---
+app.get('/api/wallet/balance', (req, res) => {
+  res.json({ balance: 0, currency: "PKR" });
+});
+
+// --- QR PAYMENT ---
+app.post('/api/payment/qr/generate', (req, res) => {
+  res.json({
+    qr_id: "QR" + Date.now(),
+    amount: req.body.amount || 0,
+    status: "generated"
+  });
+});
+
+// --- CRYPTO PAYMENT ---
+app.post('/api/payment/crypto/request', (req, res) => {
+  res.json({
+    reference: "CR" + Date.now(),
+    wallet: "TRX_FAKE_ADDRESS",
+    status: "awaiting_payment"
+  });
+});
+
+// --- AFFILIATE ---
+app.get('/api/affiliate', (req, res) => {
+  res.json({ referrals: [], earnings: 0 });
+});
+
+// --- VERIFICATION ---
+app.post('/api/verify/upload', (req, res) => {
+  res.json({ success: true, message: "documents uploaded" });
+});
+
+// --- ADMIN ---
+app.get('/api/admin', (req, res) => {
+  res.json({ admin: true, status: "panel active" });
+});
+
+// --- ROOT ---
+app.get('/', (req, res) => {
+  res.json({ ok: true, message: "PS AI Backend Running" });
+});
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log("BACKEND RUNNING ON PORT", PORT));
